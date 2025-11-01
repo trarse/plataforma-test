@@ -1,0 +1,20 @@
+[
+  {
+    "q": "¿Cuál es el color del caballo blanco de Santiago?",
+    "opts": ["Blanco", "Negro", "Marrón", "No tenía caballo"],
+    "c": "Blanco",
+    "s": "Cultura General",
+    "expl": "La pregunta es una tautología humorística, la respuesta está en la propia pregunta.",
+    "repetida": false,
+    "frecuencia": "Cultura General"
+  },
+  {
+    "q": "¿Qué significa la señal de STOP?",
+    "opts": ["Ceder el paso", "Detención obligatoria", "Acelerar", "Estacionar"],
+    "c": "Detención obligatoria",
+    "s": "Tema 14",
+    "expl": "La señal R-2 (STOP) obliga a todo conductor a detener su vehículo ante la próxima línea de detención o, si no existe, inmediatamente antes de la intersección.",
+    "repetida": true,
+    "frecuencia": "Señales de Tráfico"
+  }
+]
