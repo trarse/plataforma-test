@@ -12,9 +12,9 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(cors());
 app.use(express.json());
 
-const PORT = 3000;
-const MONGO_URI = 'mongodb://localhost:27017/oposicion_test';
-const JWT_SECRET = 'un_secreto_muy_largo_y_dificil_de_adivinar';
+const PORT = process.env.PORT || 3000;
+const MONGO_URI = process.env.MONGO_URI; // Eliminamos 'localhost' como opción
+const JWT_SECRET = process.env.JWT_SECRET || ': unacontraseñamuysecreta123456';
 
 // --- Conexión a la Base de Datos ---
 mongoose.connect(MONGO_URI)
