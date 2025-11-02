@@ -11,6 +11,10 @@ const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 app.use(cors());
 app.use(express.json());
+// --- Ruta "Ping" para despertar al servidor ---
+app.get('/', (req, res) => {
+  res.send('Servidor backend despierto y listo.');
+});
 
 const PORT = process.env.PORT || 10000;
 const MONGO_URI = process.env.MONGO_URI; // Eliminamos 'localhost' como opción
