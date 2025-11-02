@@ -16,7 +16,7 @@ app.get('/', (req, res) => {
   res.send('Servidor backend despierto y listo.');
 });
 
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGO_URI; // Eliminamos 'localhost' como opción
 const JWT_SECRET = process.env.JWT_SECRET || 'unacontraseñamuysecreta123456';
 
