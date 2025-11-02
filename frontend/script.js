@@ -28,10 +28,150 @@ let testStateInterval = null;
 // =================================================================================
 // --- 2. COMUNICACIÓN CON EL SERVIDOR (API) ---
 // =================================================================================
-async function apiRequest(endpoint, method = 'GET', body = null) { const headers = { 'Content-Type': 'application/json' }; if (authToken) { headers['Authorization'] = `Bearer ${authToken}`; } const config = { method, headers }; if (body) { config.body = JSON.stringify(body); } try { const response = await fetch(`${API_URL}/${endpoint}`, config); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || 'Error en la petición'); } if (response.status === 204 || response.headers.get("content-length") === "0") { return null; } return await response.json(); } catch (error) { console.error(`API Error en ${endpoint}:`, error); const authErrorEl = document.getElementById('auth-error'); if (authErrorEl) authErrorEl.textContent = error.message; return null; } }
-async function saveProgressToServer() { if (!authToken) return; const progressPayload = { userStats, markedQuestions, incorrectQuestions, examHistory, savedUserStats, lastDailyChallenge, inProgressTest: null }; await apiRequest('progress', 'PUT', progressPayload); console.log('Progreso guardado en el servidor.'); }
-function logout() { authToken = null; localStorage.removeItem('authToken'); localStorage.removeItem('userRole'); location.reload(); }
+// =================================================================================
+// --- 2. COMUNICACIÓN CON EL SERVIDOR (API) - VERSIÓN CORREGIDA ---
+// =================================================================================
 
+async function apiRequest(endpoint, method = 'GET', body = null) {
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+    
+    if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+    }
+    
+    const config = {
+        method,
+        headers,
+        credentials: 'omit' // Evita problemas con CORS
+    };
+    
+    if (body && (method === 'POST' || method === 'PUT')) {
+        config.body = JSON.stringify(body);
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/${endpoint}`, config);
+        
+        // Manejar respuestas sin contenido
+        if (response.status === 204) {
+            return null;
+        }
+        
+        if (!response.ok) {
+            // Intentar obtener el mensaje de error del servidor
+            let errorMessage = 'Error en la petición';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorData.message || errorMessage;
+            } catch (e) {
+                // Si no se puede parsear como JSON, usar el status text
+                errorMessage = response.statusText || errorMessage;
+            }
+            
+            throw new Error(errorMessage);
+        }
+        
+        // Para respuestas exitosas, verificar si hay contenido
+        const contentLength = response.headers.get('content-length');
+        if (contentLength === '0' || response.status === 204) {
+            return null;
+        }
+        
+        return await response.json();
+        
+    } catch (error) {
+        console.error(`API Error en ${endpoint}:`, error);
+        
+        // Mostrar error al usuario solo si es un elemento de autenticación
+        const authErrorEl = document.getElementById('auth-error');
+        if (authErrorEl && error.message.includes('auth') || error.message.includes('token')) {
+            authErrorEl.textContent = error.message;
+        }
+        
+        throw error; // Re-lanzar el error para que lo maneje el llamador
+    }
+}
+
+async function saveProgressToServer() {
+    if (!authToken) {
+        console.log('Usuario no autenticado, omitiendo guardado en servidor');
+        return;
+    }
+    
+    const progressPayload = {
+        userStats: userStats || {},
+        markedQuestions: markedQuestions || [],
+        incorrectQuestions: incorrectQuestions || [],
+        examHistory: examHistory || [],
+        savedUserStats: savedUserStats || null,
+        lastDailyChallenge: lastDailyChallenge || '',
+        inProgressTest: null
+    };
+    
+    try {
+        await apiRequest('progress', 'PUT', progressPayload);
+        console.log('Progreso guardado en el servidor.');
+    } catch (error) {
+        console.error('Error al guardar progreso:', error);
+        // No bloquear la aplicación si falla el guardado
+    }
+}
+
+function logout() {
+    authToken = null;
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userRole');
+    // Limpiar también otros datos locales si existen
+    localStorage.removeItem('userStats');
+    localStorage.removeItem('examHistory');
+    location.reload();
+}
+
+// Función adicional para manejar registro de usuarios
+async function registerUser(userData) {
+    try {
+        const result = await apiRequest('register', 'POST', userData);
+        if (result && result.token) {
+            authToken = result.token;
+            localStorage.setItem('authToken', authToken);
+            localStorage.setItem('userRole', result.role || 'user');
+            return result;
+        }
+        return null;
+    } catch (error) {
+        console.error('Error en registro:', error);
+        throw error;
+    }
+}
+
+// Función para cargar progreso desde el servidor
+async function loadProgressFromServer() {
+    if (!authToken) {
+        console.log('Usuario no autenticado, no se puede cargar progreso');
+        return null;
+    }
+    
+    try {
+        const progress = await apiRequest('progress');
+        if (progress) {
+            userStats = progress.userStats || {};
+            markedQuestions = progress.markedQuestions || [];
+            incorrectQuestions = progress.incorrectQuestions || [];
+            examHistory = progress.examHistory || [];
+            savedUserStats = progress.savedUserStats || null;
+            lastDailyChallenge = progress.lastDailyChallenge || '';
+            
+            console.log('Progreso cargado desde el servidor');
+            return progress;
+        }
+        return null;
+    } catch (error) {
+        console.error('Error al cargar progreso:', error);
+        return null;
+    }
+}
 // =================================================================================
 // --- 3. INICIALIZACIÓN DE LA APLICACIÓN ---
 // =================================================================================
